@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>PeerNotes</title>
+<style>
+:root{--bg:#f6f5f2;--panel:#fff;--ink:#1d1d1b;--mute:#76746d;--line:#e4e2db;--acc:#2f6f5e;--accink:#fff;--warn:#b3402a}
+@media (prefers-color-scheme:dark){:root{--bg:#161715;--panel:#1f2120;--ink:#ecebe6;--mute:#8f8d85;--line:#2e302d;--acc:#5fb59d;--accink:#0e1a16;--warn:#e07a63}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:.5rem .9rem;border-radius:8px}
+button.pri{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+button.danger{color:var(--warn)}
+button:disabled{opacity:.5;cursor:default}
+input,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.55rem .7rem;width:100%}
+textarea{resize:vertical}
+#app{display:grid;grid-template-columns:320px 1fr;height:100%;padding-bottom:env(safe-area-inset-bottom)}
+#side{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+.top{display:flex;gap:.5rem;align-items:center;padding:.75rem;padding-top:calc(.75rem + env(safe-area-inset-top));border-bottom:1px solid var(--line)}
+.top h1{font-size:1.05rem;margin:0;flex:1}
+.status{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--mute);padding:.5rem .75rem;border-bottom:1px solid var(--line)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mute)}
+.dot.on{background:var(--acc)}
+#list{overflow:auto;flex:1}
+.item{padding:.7rem .9rem;border-bottom:1px solid var(--line);cursor:pointer}
+.item.sel{background:var(--bg)}
+.item b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item span{display:block;color:var(--mute);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#main{display:flex;flex-direction:column;min-height:0;padding:.75rem;padding-top:calc(.75rem + env(safe-area-inset-top));gap:.6rem}
+#main .bar{display:flex;gap:.5rem}
+#title{font-weight:600;font-size:1.15rem}
+#body{flex:1;min-height:200px}
+.empty{margin:auto;color:var(--mute);text-align:center}
+#back{display:none}
+@media (max-width:700px){
+ #app{grid-template-columns:1fr}
+ #main{display:none}
+ #app.editing #side{display:none}
+ #app.editing #main{display:flex}
+ #back{display:inline-block}
+}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;max-width:560px;width:calc(100% - 24px);padding:1.1rem;max-height:92vh}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin:.1rem 0 .6rem;font-size:1.15rem}
+dialog p{margin:.4rem 0;color:var(--mute);font-size:.92rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0}
+.sas{font:700 2.2rem/1.2 ui-monospace,Menlo,monospace;letter-spacing:.2em;text-align:center;padding:.6rem;border:1px dashed var(--acc);border-radius:10px;margin:.6rem 0}
+.hide{display:none!important}
+.chk{display:flex;gap:.5rem;align-items:center;font-size:.9rem;color:var(--mute)}
+.chk input{width:auto}
+.err{color:var(--warn);font-size:.9rem}
+</style>
+</head>
+<body>
+<div id="app">
+ <aside id="side">
+  <div class="top"><h1>PeerNotes</h1><button id="newBtn" class="pri">+ New</button><button id="menuBtn" title="Settings">⚙</button></div>
+  <div class="status"><span class="dot" id="dot"></span><span id="stat">Not connected</span><span style="flex:1"></span><button id="syncBtn">Connect</button></div>
+  <div id="list"></div>
+ </aside>
+ <main id="main">
+  <div class="empty" id="empty">Select or create a note.<br><small>Notes live only on your devices.</small></div>
+  <div class="bar hide" id="bar"><button id="back">← Notes</button><span style="flex:1"></span><button id="delBtn" class="danger">Delete</button></div>
+  <input id="title" class="hide" placeholder="Title" maxlength="200" autocomplete="off">
+  <textarea id="body" class="hide" placeholder="Write something…"></textarea>
+ </main>
+</div>
+
+<dialog id="dlg">
+ <h2>Connect a device</h2>
+ <div id="s0">
+  <p>No server is involved. You exchange two short codes (via any messenger, email, or copy/paste), then the devices talk directly, end-to-end encrypted.</p>
+  <div class="row"><button class="pri" id="mkOffer">This device starts (create invite)</button><button id="mkJoin">Join with an invite</button></div>
+  <label class="chk"><input type="checkbox" id="useStun" checked> Use a public STUN server to find my address (needed across different networks; off = same Wi-Fi only)</label>
+ </div>
+ <div id="s1" class="hide">
+  <p><b>Step 1.</b> Send this invite to the other device:</p>
+  <textarea id="offerOut" rows="4" readonly></textarea>
+  <div class="row"><button id="copyOffer">Copy</button><button id="shareOffer">Share…</button></div>
+  <p><b>Step 2.</b> Paste the reply it gives you:</p>
+  <textarea id="answerIn" rows="4" placeholder="Paste reply code"></textarea>
+  <div class="row"><button class="pri" id="applyAnswer">Connect</button></div>
+ </div>
+ <div id="s2" class="hide">
+  <p><b>Step 1.</b> Paste the invite from the other device:</p>
+  <textarea id="offerIn" rows="4" placeholder="Paste invite code"></textarea>
+  <div class="row"><button class="pri" id="mkAnswer">Create reply</button></div>
+  <div id="ansWrap" class="hide">
+   <p><b>Step 2.</b> Send this reply back to the other device:</p>
+   <textarea id="answerOut" rows="4" readonly></textarea>
+   <div class="row"><button id="copyAnswer">Copy</button><button id="shareAnswer">Share…</button></div>
+  </div>
+ </div>
+ <div id="s3" class="hide">
+  <h2>Verify the connection</h2>
+  <p>Both screens must show the <b>same</b> code. If they differ, someone is intercepting — cancel.</p>
+  <div class="sas" id="sas">------</div>
+  <div class="row"><button class="pri" id="sasOk">Codes match</button><button class="danger" id="sasNo">Cancel</button></div>
+  <p id="waitMsg" class="hide">Waiting for the other device to confirm…</p>
+ </div>
+ <div id="s4" class="hide">
+  <h2>Settings</h2>
+  <p>Protect notes stored on this device with a passphrase (AES-256-GCM, PBKDF2). If you forget it, notes on this device cannot be recovered — but a connected device can re-send them.</p>
+  <input type="password" id="pass" placeholder="New passphrase (blank to remove)" autocomplete="new-password">
+  <div class="row"><button id="setPass">Apply</button><button class="danger" id="disc">Disconnect</button></div>
+ </div>
+ <div class="err" id="err"></div>
+ <div class="row"><button id="closeDlg">Close</button></div>
+</dialog>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const enc=new TextEncoder(), dec=new TextDecoder();
+const LIM={title:200,body:200000,notes:5000,msg:8e6};
+let notes={}, curId=null, key=null, store=null;
+
+/* ---------- utilities ---------- */
+const b64=u8=>btoa(String.fromCharCode(...u8)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const unb64=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
+const rid=()=>b64(crypto.getRandomValues(new Uint8Array(12)));
+const hasSubtle=!!(crypto&&crypto.subtle);
+const showErr=m=>{$('#err').textContent=m||''};
+
+function sha256(bytes){ // fallback if SubtleCrypto unavailable (insecure context)
+ const K=[];for(let i=2,n=0;n<64;i++){let p=1;for(let j=2;j*j<=i;j++)if(i%j==0){p=0;break}if(p){K[n++]=(Math.cbrt(i)%1*4294967296)|0}}
+ let H=[];for(let i=2,n=0;n<8;i++){let p=1;for(let j=2;j*j<=i;j++)if(i%j==0){p=0;break}if(p){H[n++]=(Math.sqrt(i)%1*4294967296)|0}}
+ const l=bytes.length,w=[],t=new Uint8Array(((l+9+63)>>6)<<6);t.set(bytes);t[l]=0x80;
+ const dv=new DataView(t.buffer);dv.setUint32(t.length-4,l*8>>>0);dv.setUint32(t.length-8,Math.floor(l/536870912));
+ const r=(x,n)=>(x>>>n)|(x<<(32-n));
+ for(let o=0;o<t.length;o+=64){for(let i=0;i<16;i++)w[i]=dv.getUint32(o+i*4);
+  for(let i=16;i<64;i++){const a=r(w[i-15],7)^r(w[i-15],18)^(w[i-15]>>>3),b=r(w[i-2],17)^r(w[i-2],19)^(w[i-2]>>>10);w[i]=(w[i-16]+a+w[i-7]+b)|0}
+  let [a,b,c,d,e,f,g,h]=H;
+  for(let i=0;i<64;i++){const s1=r(e,6)^r(e,11)^r(e,25),ch=(e&f)^(~e&g),t1=(h+s1+ch+K[i]+w[i])|0,s0=r(a,2)^r(a,13)^r(a,22),mj=(a&b)^(a&c)^(b&c),t2=(s0+mj)|0;h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0}
+  H=[H[0]+a|0,H[1]+b|0,H[2]+c|0,H[3]+d|0,H[4]+e|0,H[5]+f|0,H[6]+g|0,H[7]+h|0]}
+ const out=new Uint8Array(32),ov=new DataView(out.buffer);H.forEach((v,i)=>ov.setUint32(i*4,v));return out;
+}
+async function hash(bytes){return hasSubtle?new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)):sha256(bytes)}
+
+async function pack(str){ // compress + base64url
+ if(window.CompressionStream){
+  const cs=new CompressionStream('deflate-raw');const w=cs.writable.getWriter();w.write(enc.encode(str));w.close();
+  return 'z.'+b64(new Uint8Array(await new Response(cs.readable).arrayBuffer()));
+ }
+ return 'p.'+b64(enc.encode(str));
+}
+async function unpack(code){
+ code=code.trim().replace(/\s+/g,'');const tag=code.slice(0,2),d=unb64(code.slice(2));
+ if(tag==='z.'){const ds=new DecompressionStream('deflate-raw');const w=ds.writable.getWriter();w.write(d);w.close();return dec.decode(await new Response(ds.readable).arrayBuffer())}
+ if(tag==='p.')return dec.decode(d);
+ throw new Error('Not a valid code');
+}
+
+/* ---------- storage (optional AES-GCM at rest) ---------- */
+async function deriveKey(pass,salt){
+ const base=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+ return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+let saveT=0;
+function save(){clearTimeout(saveT);saveT=setTimeout(doSave,300)}
+async function doSave(){
+ try{
+  const json=JSON.stringify(notes);
+  if(key){
+   const iv=crypto.getRandomValues(new Uint8Array(12));
+   const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(json)));
+   localStorage.setItem('pn1',JSON.stringify({e:1,s:store.s,iv:b64(iv),ct:b64(ct)}));
+  }else localStorage.setItem('pn1',JSON.stringify({e:0,d:json}));
+ }catch(e){showErr('Could not save: '+e.message)}
+}
+async function load(){
+ let raw=localStorage.getItem('pn1');if(!raw)return;
+ const o=JSON.parse(raw);
+ if(!o.e){notes=clean(JSON.parse(o.d));return}
+ for(;;){
+  const p=prompt('Passphrase to unlock notes:');
+  if(p===null){document.body.textContent='Locked. Reload to try again.';throw new Error('locked')}
+  try{
+   const salt=unb64(o.s);const k=await deriveKey(p,salt);
+   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},k,unb64(o.ct));
+   key=k;store={s:o.s};notes=clean(JSON.parse(dec.decode(pt)));return;
+  }catch(e){alert('Wrong passphrase')}
+ }
+}
+
+/* ---------- notes ---------- */
+function validNote(n){
+ return n&&typeof n==='object'&&typeof n.id==='string'&&n.id.length>0&&n.id.length<=40&&/^[\w-]+$/.test(n.id)
+  &&typeof n.title==='string'&&n.title.length<=LIM.title&&typeof n.body==='string'&&n.body.length<=LIM.body
+  &&Number.isFinite(n.updated)&&n.updated>0&&n.updated<4e12&&typeof n.deleted==='boolean';
+}
+function clean(obj){const o={};for(const k in obj){const n=obj[k];if(validNote(n)&&k===n.id)o[k]={id:n.id,title:n.title,body:n.body,updated:n.updated,deleted:n.deleted}}return o}
+function merge(n){
+ if(!validNote(n))return false;
+ const c=notes[n.id];
+ if(c&&(c.updated>n.updated||(c.updated===n.updated&&c.body+c.title>=n.body+n.title)))return false;
+ if(!c&&Object.keys(notes).length>=LIM.notes)return false;
+ notes[n.id]={id:n.id,title:n.title,body:n.body,updated:n.updated,deleted:n.deleted};return true;
+}
+function render(){
+ const list=$('#list');list.textContent='';
+ Object.values(notes).filter(n=>!n.deleted).sort((a,b)=>b.updated-a.updated).forEach(n=>{
+  const d=document.createElement('div');d.className='item'+(n.id===curId?' sel':'');
+  const b=document.createElement('b');b.textContent=n.title||'Untitled';
+  const s=document.createElement('span');s.textContent=n.body.slice(0,80).replace(/\s+/g,' ')||'No content';
+  d.append(b,s);d.onclick=()=>open(n.id);list.append(d);
+ });
+ const n=curId&&notes[curId]&&!notes[curId].deleted?notes[curId]:null;
+ if(!n)curId=null;
+ for(const id of ['#bar','#title','#body'])$(id).classList.toggle('hide',!n);
+ $('#empty').classList.toggle('hide',!!n);
+ if(n){if($('#title').value!==n.title)$('#title').value=n.title;if($('#body').value!==n.body)$('#body').value=n.body}
+ $('#app').classList.toggle('editing',!!n&&window.innerWidth<=700&&editing);
+}
+let editing=false;
+function open(id){curId=id;editing=true;render()}
+function touch(){
+ const n=notes[curId];if(!n)return;
+ n.title=$('#title').value;n.body=$('#body').value;n.updated=Math.max(Date.now(),n.updated+1);
+ save();send({t:'note',n});renderListOnly();
+}
+function renderListOnly(){const y=$('#list').scrollTop;const t=$('#title').value,b=$('#body').value;render();$('#list').scrollTop=y}
+$('#newBtn').onclick=()=>{const n={id:rid(),title:'',body:'',updated:Date.now(),deleted:false};notes[n.id]=n;save();send({t:'note',n});open(n.id);$('#title').focus()};
+$('#title').oninput=touch;$('#body').oninput=touch;
+$('#back').onclick=()=>{editing=false;render()};
+$('#delBtn').onclick=()=>{if(!confirm('Delete this note on all connected devices?'))return;const n=notes[curId];n.deleted=true;n.title='';n.body='';n.updated=Math.max(Date.now(),n.updated+1);save();send({t:'note',n});editing=false;curId=null;render()};
+
+/* ---------- P2P ---------- */
+let pc=null,dc=null,localOk=false,remoteReady=false,synced=false;
+const dlg=$('#dlg');
+function step(id){for(const s of ['s0','s1','s2','s3','s4'])$('#'+s).classList.toggle('hide',s!==id);showErr('')}
+function setStatus(on,txt){$('#dot').classList.toggle('on',on);$('#stat').textContent=txt;$('#syncBtn').textContent=on?'Manage':'Connect'}
+function newPC(){
+ teardown();
+ const ice=$('#useStun').checked?[{urls:'stun:stun.l.google.com:19302'}]:[];
+ pc=new RTCPeerConnection({iceServers:ice});
+ pc.onconnectionstatechange=()=>{
+  const s=pc.connectionState;
+  if(s==='failed'||s==='disconnected'||s==='closed'){if(synced||dc){setStatus(false,'Disconnected');synced=false}}
+ };
+ pc.ondatachannel=e=>wire(e.channel);
+}
+function teardown(){try{dc&&dc.close()}catch{}try{pc&&pc.close()}catch{}pc=dc=null;localOk=remoteReady=synced=false;setStatus(false,'Not connected')}
+function wire(ch){
+ dc=ch;
+ ch.onopen=async()=>{
+  setStatus(false,'Verify code…');
+  await showSas();step('s3');if(!dlg.open)dlg.showModal();
+ };
+ ch.onclose=()=>{setStatus(false,'Disconnected');synced=false};
+ ch.onmessage=onMsg;
+}
+async function iceDone(){
+ if(pc.iceGatheringState==='complete')return;
+ await new Promise(res=>{const f=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',f);res()}};pc.addEventListener('icegatheringstatechange',f);setTimeout(res,5000)});
+}
+$('#mkOffer').onclick=async()=>{
+ try{
+  newPC();const ch=pc.createDataChannel('notes',{ordered:true});wire(ch);
+  await pc.setLocalDescription(await pc.createOffer());await iceDone();
+  $('#offerOut').value=await pack(JSON.stringify(pc.localDescription));step('s1');
+ }catch(e){showErr(e.message)}
+};
+$('#mkJoin').onclick=()=>step('s2');
+$('#mkAnswer').onclick=async()=>{
+ try{
+  const desc=JSON.parse(await unpack($('#offerIn').value));
+  if(desc.type!=='offer'||typeof desc.sdp!=='string')throw new Error('That is not an invite code');
+  newPC();await pc.setRemoteDescription(desc);
+  await pc.setLocalDescription(await pc.createAnswer());await iceDone();
+  $('#answerOut').value=await pack(JSON.stringify(pc.localDescription));$('#ansWrap').classList.remove('hide');
+ }catch(e){showErr(e.message)}
+};
+$('#applyAnswer').onclick=async()=>{
+ try{
+  const desc=JSON.parse(await unpack($('#answerIn').value));
+  if(desc.type!=='answer'||typeof desc.sdp!=='string')throw new Error('That is not a reply code');
+  await pc.setRemoteDescription(desc);setStatus(false,'Connecting…');
+ }catch(e){showErr(e.message)}
+};
+const copy=id=>async()=>{const t=$(id).value;try{await navigator.clipboard.writeText(t)}catch{$(id).select();document.execCommand('copy')}};
+const share=id=>async()=>{const t=$(id).value;if(navigator.share)try{await navigator.share({text:t})}catch{}else copy(id)()};
+$('#copyOffer').onclick=copy('#offerOut');$('#copyAnswer').onclick=copy('#answerOut');
+$('#shareOffer').onclick=share('#offerOut');$('#shareAnswer').onclick=share('#answerOut');
+
+/* Short authentication string: hash of both DTLS fingerprints. A man-in-the-middle
+   would have to present different fingerprints to each side, giving different codes. */
+function fps(sdp){return (sdp.match(/a=fingerprint:\S+ [0-9A-Fa-f:]+/g)||[]).map(s=>s.toLowerCase()).sort()}
+async function showSas(){
+ const all=[...fps(pc.localDescription.sdp),...fps(pc.remoteDescription.sdp)].sort().join('|');
+ const h=await hash(enc.encode('peernotes-sas|'+all));
+ const n=((h[0]<<24|h[1]<<16|h[2]<<8|h[3])>>>0)%1000000;
+ $('#sas').textContent=String(n).padStart(6,'0').replace(/(\d{3})(\d{3})/,'$1 $2');
+ localOk=false;remoteReady=false;$('#sasOk').disabled=false;$('#waitMsg').classList.add('hide');
+}
+$('#sasOk').onclick=()=>{localOk=true;$('#sasOk').disabled=true;$('#waitMsg').classList.remove('hide');rawSend({t:'ready'});maybeStart()};
+$('#sasNo').onclick=()=>{teardown();dlg.close()};
+function maybeStart(){
+ if(localOk&&remoteReady&&!synced){
+  synced=true;setStatus(true,'Connected & encrypted');dlg.close();
+  rawSend({t:'all',notes:Object.values(notes)});
+ }
+}
+function rawSend(o){if(dc&&dc.readyState==='open')dc.send(JSON.stringify(o))}
+function send(o){if(synced)rawSend(o)}
+function onMsg(e){
+ if(typeof e.data!=='string'||e.data.length>LIM.msg)return;
+ let m;try{m=JSON.parse(e.data)}catch{return}
+ if(!m||typeof m!=='object')return;
+ if(m.t==='ready'){remoteReady=true;maybeStart();return}
+ if(!synced)return; // ignore data until both users confirmed the code
+ let ch=false;
+ if(m.t==='note'){ch=merge(m.n)}
+ else if(m.t==='all'&&Array.isArray(m.notes)){
+  for(const n of m.notes.slice(0,LIM.notes))ch=merge(n)||ch;
+  // send back anything we have that is newer
+  const theirs={};for(const n of m.notes)if(n&&n.id)theirs[n.id]=n.updated;
+  for(const n of Object.values(notes))if(!(n.id in theirs)||theirs[n.id]<n.updated)rawSend({t:'note',n});
+ }
+ if(ch){save();render()}
+}
+
+/* ---------- settings / dialog ---------- */
+$('#syncBtn').onclick=()=>{synced?step('s4'):step('s0');if(!dlg.open)dlg.showModal()};
+$('#menuBtn').onclick=()=>{step('s4');dlg.showModal()};
+$('#closeDlg').onclick=()=>dlg.close();
+$('#disc').onclick=()=>{teardown();dlg.close()};
+$('#setPass').onclick=async()=>{
+ const p=$('#pass').value;
+ if(!p){key=null;store=null;await doSave();showErr('Passphrase removed.');return}
+ if(!hasSubtle){showErr('Encryption needs a secure context (open this page over HTTPS).');return}
+ if(p.length<8){showErr('Use at least 8 characters.');return}
+ const salt=crypto.getRandomValues(new Uint8Array(16));store={s:b64(salt)};key=await deriveKey(p,salt);await doSave();$('#pass').value='';showErr('Notes on this device are now encrypted.');
+};
+
+/* ---------- boot ---------- */
+(async()=>{
+ await load();render();
+ if(!window.RTCPeerConnection)setStatus(false,'WebRTC not supported');
+ addEventListener('resize',render);
+})();
+})();
+</script>
+</body>
+</html>
