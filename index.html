@@ -3,25 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data: blob:; media-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>NANDY Noter</title>
+<title>Simulus</title>
 <style>
-:root{--bg:#f6f5f2;--panel:#fff;--ink:#1d1d1b;--mute:#76746d;--line:#e4e2db;--acc:#2f6f5e;--accink:#fff;--warn:#b3402a}
-@media (prefers-color-scheme:dark){:root{--bg:#161715;--panel:#1f2120;--ink:#ecebe6;--mute:#8f8d85;--line:#2e302d;--acc:#5fb59d;--accink:#0e1a16;--warn:#e07a63}}
+:root{--bg:#f6f5f2;--panel:#fff;--ink:#1d1d1b;--mute:#76746d;--line:#e4e2db;--acc:#2f6f5e;--accink:#fff;--warn:#b3402a;--code:#efede7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161715;--panel:#1f2120;--ink:#ecebe6;--mute:#8f8d85;--line:#2e302d;--acc:#5fb59d;--accink:#0e1a16;--warn:#e07a63;--code:#2a2c2a}}
+:root[data-theme="dark"]{--bg:#161715;--panel:#1f2120;--ink:#ecebe6;--mute:#8f8d85;--line:#2e302d;--acc:#5fb59d;--accink:#0e1a16;--warn:#e07a63;--code:#2a2c2a}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-text-size-adjust:100%}
-button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:.5rem .9rem;border-radius:8px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:.45rem .8rem;border-radius:8px}
 button.pri{background:var(--acc);color:var(--accink);border-color:var(--acc)}
 button.danger{color:var(--warn)}
+button.on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
 button:disabled{opacity:.5;cursor:default}
 input,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.55rem .7rem;width:100%}
 textarea{resize:vertical}
 #app{display:grid;grid-template-columns:320px 1fr;height:100%;padding-bottom:env(safe-area-inset-bottom)}
 #side{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
-.top{display:flex;gap:.5rem;align-items:center;padding:.75rem;padding-top:calc(.75rem + env(safe-area-inset-top));border-bottom:1px solid var(--line)}
+.top{display:flex;gap:.4rem;align-items:center;padding:.75rem;padding-top:calc(.75rem + env(safe-area-inset-top));border-bottom:1px solid var(--line)}
 .top h1{font-size:1.05rem;margin:0;flex:1}
+.top button{padding:.4rem .6rem}
+#searchWrap{padding:.5rem .75rem;border-bottom:1px solid var(--line)}
 .status{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--mute);padding:.5rem .75rem;border-bottom:1px solid var(--line)}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--mute)}
 .dot.on{background:var(--acc)}
@@ -30,10 +34,27 @@ textarea{resize:vertical}
 .item.sel{background:var(--bg)}
 .item b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item span{display:block;color:var(--mute);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#main{display:flex;flex-direction:column;min-height:0;padding:.75rem;padding-top:calc(.75rem + env(safe-area-inset-top));gap:.6rem}
-#main .bar{display:flex;gap:.5rem}
+.none{padding:1rem;color:var(--mute);text-align:center;font-size:.9rem}
+#main{display:flex;flex-direction:column;min-height:0;padding:.75rem;padding-top:calc(.75rem + env(safe-area-inset-top));gap:.55rem}
+.bar{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+#tools{display:flex;gap:.3rem;flex-wrap:wrap}
+#tools button{padding:.25rem .55rem;min-width:2.1rem}
 #title{font-weight:600;font-size:1.15rem}
 #body{flex:1;min-height:200px}
+#preview{flex:1;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;word-wrap:break-word;overflow-wrap:anywhere}
+#preview h1,#preview h2,#preview h3,#preview h4,#preview h5,#preview h6{margin:.8em 0 .3em;line-height:1.25}
+#preview h1{font-size:1.5rem}#preview h2{font-size:1.3rem}#preview h3{font-size:1.15rem}
+#preview p{margin:.5em 0}
+#preview code{background:var(--code);padding:.1em .35em;border-radius:5px;font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+#preview pre{background:var(--code);padding:.7rem;border-radius:8px;overflow:auto}
+#preview pre code{padding:0;background:none}
+#preview blockquote{margin:.5em 0;padding:.1em .9em;border-left:3px solid var(--acc);color:var(--mute)}
+#preview ul,#preview ol{padding-left:1.4rem;margin:.4em 0}
+#preview li.task{list-style:none;margin-left:-1.2rem}
+#preview li.task input{width:auto;margin-right:.5rem}
+#preview li.done span{text-decoration:line-through;color:var(--mute)}
+#preview a{color:var(--acc)}
+#preview hr{border:0;border-top:1px solid var(--line);margin:1rem 0}
 .empty{margin:auto;color:var(--mute);text-align:center}
 #back{display:none}
 @media (max-width:700px){
@@ -53,45 +74,63 @@ dialog p{margin:.4rem 0;color:var(--mute);font-size:.92rem}
 .chk{display:flex;gap:.5rem;align-items:center;font-size:.9rem;color:var(--mute)}
 .chk input{width:auto}
 .err{color:var(--warn);font-size:.9rem}
+canvas.qr{display:block;margin:.6rem auto;max-width:100%;height:auto;background:#fff;border-radius:8px;image-rendering:pixelated}
+#cam{width:100%;border-radius:10px;background:#000;max-height:50vh}
+.dev{display:flex;align-items:center;gap:.5rem;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--line);font-size:.9rem}
 </style>
 </head>
 <body>
 <div id="app">
  <aside id="side">
-  <div class="top"><h1>PeerNotes</h1><button id="newBtn" class="pri">+ New</button><button id="menuBtn" title="Settings">⚙</button></div>
+  <div class="top"><h1>nandy Simulus 2.0</h1><button id="themeBtn" title="Theme">◐</button><button id="menuBtn" title="Settings">⚙</button><button id="newBtn" class="pri">+ New</button></div>
+  <div id="searchWrap"><input id="q" type="search" placeholder="Search notes…" autocomplete="off"></div>
   <div class="status"><span class="dot" id="dot"></span><span id="stat">Not connected</span><span style="flex:1"></span><button id="syncBtn">Connect</button></div>
   <div id="list"></div>
  </aside>
  <main id="main">
   <div class="empty" id="empty">Select or create a note.<br><small>Notes live only on your devices.</small></div>
-  <div class="bar hide" id="bar"><button id="back">← Notes</button><span style="flex:1"></span><button id="delBtn" class="danger">Delete</button></div>
+  <div class="bar hide" id="bar">
+   <button id="back">← Notes</button>
+   <button id="tabEdit" class="on">Edit</button><button id="tabPrev">Preview</button>
+   <span style="flex:1"></span><button id="delBtn" class="danger">Delete</button>
+  </div>
   <input id="title" class="hide" placeholder="Title" maxlength="200" autocomplete="off">
-  <textarea id="body" class="hide" placeholder="Write something…"></textarea>
+  <div id="tools" class="hide">
+   <button data-f="b" title="Bold"><b>B</b></button><button data-f="i" title="Italic"><i>I</i></button><button data-f="h" title="Heading">H</button>
+   <button data-f="ul" title="List">• List</button><button data-f="task" title="Checklist">☑</button><button data-f="code" title="Code">&lt;/&gt;</button><button data-f="link" title="Link">🔗</button>
+  </div>
+  <textarea id="body" class="hide" placeholder="Write something… (Markdown supported)"></textarea>
+  <div id="preview" class="hide"></div>
  </main>
 </div>
 
 <dialog id="dlg">
- <h2>Connect a device</h2>
  <div id="s0">
-  <p>No server is involved. You exchange two short codes (via any messenger, email, or copy/paste), then the devices talk directly, end-to-end encrypted.</p>
+  <h2>Connect a device</h2>
+  <p>No server is involved. Exchange two short codes (QR or text), then the devices talk directly, end-to-end encrypted.</p>
   <div class="row"><button class="pri" id="mkOffer">This device starts (create invite)</button><button id="mkJoin">Join with an invite</button></div>
   <label class="chk"><input type="checkbox" id="useStun" checked> Use a public STUN server to find my address (needed across different networks; off = same Wi-Fi only)</label>
+  <p id="trustedHint" class="hide">You have remembered devices: they will connect without the code check.</p>
  </div>
  <div id="s1" class="hide">
-  <p><b>Step 1.</b> Send this invite to the other device:</p>
-  <textarea id="offerOut" rows="4" readonly></textarea>
-  <div class="row"><button id="copyOffer">Copy</button><button id="shareOffer">Share…</button></div>
-  <p><b>Step 2.</b> Paste the reply it gives you:</p>
-  <textarea id="answerIn" rows="4" placeholder="Paste reply code"></textarea>
-  <div class="row"><button class="pri" id="applyAnswer">Connect</button></div>
+  <h2>Invite</h2>
+  <p><b>Step 1.</b> On the other device, scan this QR code with its camera (it opens the app and continues automatically), or send the text code.</p>
+  <canvas id="offerQr" class="qr"></canvas>
+  <textarea id="offerOut" rows="3" readonly></textarea>
+  <div class="row"><button id="copyOffer">Copy code</button><button id="copyLink">Copy link</button><button id="shareOffer">Share…</button></div>
+  <p><b>Step 2.</b> Scan or paste the reply from the other device:</p>
+  <textarea id="answerIn" rows="3" placeholder="Paste reply code"></textarea>
+  <div class="row"><button id="scanAnswer">Scan reply QR</button><button class="pri" id="applyAnswer">Connect</button></div>
  </div>
  <div id="s2" class="hide">
-  <p><b>Step 1.</b> Paste the invite from the other device:</p>
-  <textarea id="offerIn" rows="4" placeholder="Paste invite code"></textarea>
-  <div class="row"><button class="pri" id="mkAnswer">Create reply</button></div>
+  <h2>Join</h2>
+  <p><b>Step 1.</b> Scan the invite QR from the other device, or paste its code:</p>
+  <textarea id="offerIn" rows="3" placeholder="Paste invite code or link"></textarea>
+  <div class="row"><button id="scanOffer">Scan invite QR</button><button class="pri" id="mkAnswer">Create reply</button></div>
   <div id="ansWrap" class="hide">
-   <p><b>Step 2.</b> Send this reply back to the other device:</p>
-   <textarea id="answerOut" rows="4" readonly></textarea>
+   <p><b>Step 2.</b> Show this to the other device (it scans it or you paste the text):</p>
+   <canvas id="answerQr" class="qr"></canvas>
+   <textarea id="answerOut" rows="3" readonly></textarea>
    <div class="row"><button id="copyAnswer">Copy</button><button id="shareAnswer">Share…</button></div>
   </div>
  </div>
@@ -99,31 +138,87 @@ dialog p{margin:.4rem 0;color:var(--mute);font-size:.92rem}
   <h2>Verify the connection</h2>
   <p>Both screens must show the <b>same</b> code. If they differ, someone is intercepting — cancel.</p>
   <div class="sas" id="sas">------</div>
+  <label class="chk"><input type="checkbox" id="trustChk" checked> Remember this device (next time no code check is needed)</label>
   <div class="row"><button class="pri" id="sasOk">Codes match</button><button class="danger" id="sasNo">Cancel</button></div>
   <p id="waitMsg" class="hide">Waiting for the other device to confirm…</p>
+  <p id="trustMsg" class="hide">Remembered device recognised — connecting…</p>
  </div>
  <div id="s4" class="hide">
   <h2>Settings</h2>
-  <p>Protect notes stored on this device with a passphrase (AES-256-GCM, PBKDF2). If you forget it, notes on this device cannot be recovered — but a connected device can re-send them.</p>
+  <p><b>Protect this device.</b> Encrypt stored notes with a passphrase (AES-256-GCM, PBKDF2). If you forget it, notes on this device can't be recovered, but a connected device can re-send them.</p>
   <input type="password" id="pass" placeholder="New passphrase (blank to remove)" autocomplete="new-password">
   <div class="row"><button id="setPass">Apply</button><button class="danger" id="disc">Disconnect</button></div>
+  <p><b>Remembered devices</b></p>
+  <div id="devs"></div>
+ </div>
+ <div id="s5" class="hide">
+  <h2>Scan QR code</h2>
+  <video id="cam" playsinline muted></video>
+  <p>Point the camera at the QR code.</p>
+  <div class="row"><button id="stopScan">Cancel</button></div>
  </div>
  <div class="err" id="err"></div>
  <div class="row"><button id="closeDlg">Close</button></div>
 </dialog>
 
 <script>
+/*QR-START*/
+const QR=(()=>{
+ const ECC=[-1,7,10,15,20,26,18,20,24,30,18,20,24,26,30,22,24,28,30,28,28,28,28,30,30,26,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30];
+ const BLK=[-1,1,1,1,1,1,2,2,2,2,4,4,4,4,4,6,6,6,6,7,8,8,9,9,10,12,12,12,13,14,15,16,17,18,19,19,20,21,22,24,25];
+ const raw=v=>{let r=(16*v+128)*v+64;if(v>=2){const n=Math.floor(v/7)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36}return r};
+ const dataCW=v=>Math.floor(raw(v)/8)-ECC[v]*BLK[v];
+ const mul=(x,y)=>{let z=0;for(let i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x}return z};
+ const divisor=d=>{const r=new Array(d).fill(0);r[d-1]=1;let root=1;for(let i=0;i<d;i++){for(let j=0;j<d;j++){r[j]=mul(r[j],root);if(j+1<d)r[j]^=r[j+1]}root=mul(root,2)}return r};
+ const rem=(data,div)=>{const r=div.map(()=>0);for(const b of data){const f=b^r.shift();r.push(0);div.forEach((c,i)=>{r[i]^=mul(c,f)})}return r};
+ function encode(bytes){
+  let v=1;for(;;v++){if(v>40)throw new Error('too long');if(4+(v<10?8:16)+bytes.length*8<=dataCW(v)*8)break}
+  const bits=[];const push=(val,len)=>{for(let i=len-1;i>=0;i--)bits.push((val>>>i)&1)};
+  push(4,4);push(bytes.length,v<10?8:16);bytes.forEach(b=>push(b,8));
+  const cap=dataCW(v)*8;push(0,Math.min(4,cap-bits.length));while(bits.length%8)bits.push(0);
+  for(let p=0xEC;bits.length<cap;p^=0xEC^0x11)push(p,8);
+  const data=[];for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];data.push(b)}
+  // ecc + interleave
+  const nb=BLK[v],el=ECC[v],rc=Math.floor(raw(v)/8),ns=nb-rc%nb,sl=Math.floor(rc/nb),div=divisor(el),blocks=[];
+  for(let i=0,k=0;i<nb;i++){const dat=data.slice(k,k+sl-el+(i<ns?0:1));k+=dat.length;const e=rem(dat,div);if(i<ns)dat.push(0);blocks.push(dat.concat(e))}
+  const cw=[];for(let i=0;i<blocks[0].length;i++)blocks.forEach((b,j)=>{if(i!==sl-el||j>=ns)cw.push(b[i])});
+  // matrix
+  const size=v*4+17;const M=[],F=[];for(let i=0;i<size;i++){M.push(new Array(size).fill(false));F.push(new Array(size).fill(false))}
+  const set=(x,y,c)=>{M[y][x]=c;F[y][x]=true};
+  for(let i=0;i<size;i++){set(6,i,i%2===0);set(i,6,i%2===0)}
+  const finder=(x,y)=>{for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy)),xx=x+dx,yy=y+dy;if(xx>=0&&xx<size&&yy>=0&&yy<size)set(xx,yy,d!==2&&d!==4)}};
+  finder(3,3);finder(size-4,3);finder(3,size-4);
+  const al=[];if(v>1){const n=Math.floor(v/7)+2,step=v===32?26:Math.ceil((v*4+4)/(n*2-2))*2;al.push(6);for(let p=size-7;al.length<n;p-=step)al.splice(1,0,p)}
+  for(let i=0;i<al.length;i++)for(let j=0;j<al.length;j++){if((i===0&&j===0)||(i===0&&j===al.length-1)||(i===al.length-1&&j===0))continue;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)set(al[i]+dx,al[j]+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}
+  const fmt=mask=>{const d=(1<<3)|mask;let r=d;for(let i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);const bits=((d<<10)|r)^0x5412,bit=i=>((bits>>>i)&1)!==0;
+   for(let i=0;i<=5;i++)set(8,i,bit(i));set(8,7,bit(6));set(8,8,bit(7));set(7,8,bit(8));for(let i=9;i<15;i++)set(14-i,8,bit(i));
+   for(let i=0;i<8;i++)set(size-1-i,8,bit(i));for(let i=8;i<15;i++)set(8,size-15+i,bit(i));set(8,size-8,true)};
+  fmt(0);
+  if(v>=7){let r=v;for(let i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);const bits=(v<<12)|r;for(let i=0;i<18;i++){const c=((bits>>>i)&1)!==0,a=size-11+i%3,b=Math.floor(i/3);set(a,b,c);set(b,a,c)}}
+  // codewords
+  let idx=0;for(let right=size-1;right>=1;right-=2){if(right===6)right=5;for(let vert=0;vert<size;vert++)for(let j=0;j<2;j++){const x=right-j,up=((right+1)&2)===0,y=up?size-1-vert:vert;if(!F[y][x]&&idx<cw.length*8){M[y][x]=((cw[idx>>>3]>>>(7-(idx&7)))&1)!==0;idx++}}}
+  const apply=m=>{for(let y=0;y<size;y++)for(let x=0;x<size;x++){let inv;switch(m){case 0:inv=(x+y)%2===0;break;case 1:inv=y%2===0;break;case 2:inv=x%3===0;break;case 3:inv=(x+y)%3===0;break;case 4:inv=(Math.floor(x/3)+Math.floor(y/2))%2===0;break;case 5:inv=x*y%2+x*y%3===0;break;case 6:inv=(x*y%2+x*y%3)%2===0;break;default:inv=((x+y)%2+x*y%3)%2===0}if(!F[y][x]&&inv)M[y][x]=!M[y][x]}};
+  const penalty=()=>{let p=0;for(let a=0;a<2;a++){for(let i=0;i<size;i++){let run=1;for(let j=1;j<size;j++){const c=a?M[j][i]:M[i][j],d=a?M[j-1][i]:M[i][j-1];if(c===d){run++;if(run===5)p+=3;else if(run>5)p++}else run=1}}}
+   for(let y=0;y<size-1;y++)for(let x=0;x<size-1;x++){const c=M[y][x];if(c===M[y][x+1]&&c===M[y+1][x]&&c===M[y+1][x+1])p+=3}
+   let dark=0;for(const r of M)for(const c of r)if(c)dark++;p+=Math.floor(Math.abs(dark*20-size*size*10)/(size*size))*10;return p};
+  let best=0,bp=Infinity;for(let m=0;m<8;m++){apply(m);fmt(m);const p=penalty();if(p<bp){bp=p;best=m}apply(m)}
+  apply(best);fmt(best);return M;
+ }
+ return{encode};
+})();
+/*QR-END*/
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s);
 const enc=new TextEncoder(), dec=new TextDecoder();
-const LIM={title:200,body:200000,notes:5000,msg:8e6};
-let notes={}, curId=null, key=null, store=null;
+const LIM={title:200,body:200000,notes:5000,msg:8e6,trusted:20};
+let notes={}, trusted=[], curId=null, key=null, store=null, mode='edit', editing=false;
 
 /* ---------- utilities ---------- */
-const b64=u8=>btoa(String.fromCharCode(...u8)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64=u8=>{let s='';for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
 const unb64=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
-const rid=()=>b64(crypto.getRandomValues(new Uint8Array(12)));
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+const rid=()=>b64(rnd(12));
 const hasSubtle=!!(crypto&&crypto.subtle);
 const showErr=m=>{$('#err').textContent=m||''};
 
@@ -142,7 +237,7 @@ function sha256(bytes){ // fallback if SubtleCrypto unavailable (insecure contex
 }
 async function hash(bytes){return hasSubtle?new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)):sha256(bytes)}
 
-async function pack(str){ // compress + base64url
+async function pack(str){
  if(window.CompressionStream){
   const cs=new CompressionStream('deflate-raw');const w=cs.writable.getWriter();w.write(enc.encode(str));w.close();
   return 'z.'+b64(new Uint8Array(await new Response(cs.readable).arrayBuffer()));
@@ -155,6 +250,18 @@ async function unpack(code){
  if(tag==='p.')return dec.decode(d);
  throw new Error('Not a valid code');
 }
+function extractCode(v){v=String(v).trim();const m=v.match(/#[ia]=([\w.\-]+)/);return m?m[1]:v}
+
+/* ---------- theme ---------- */
+const THEMES=['auto','light','dark'],ICON={auto:'◐',light:'☀',dark:'☾'};
+function applyTheme(t){
+ if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t);
+ $('#themeBtn').textContent=ICON[t];$('#themeBtn').title='Theme: '+t;
+}
+let theme='auto';try{theme=localStorage.getItem('pn_theme')||'auto'}catch{}
+if(!THEMES.includes(theme))theme='auto';
+$('#themeBtn').onclick=()=>{theme=THEMES[(THEMES.indexOf(theme)+1)%3];try{localStorage.setItem('pn_theme',theme)}catch{}applyTheme(theme)};
+applyTheme(theme);
 
 /* ---------- storage (optional AES-GCM at rest) ---------- */
 async function deriveKey(pass,salt){
@@ -165,27 +272,36 @@ let saveT=0;
 function save(){clearTimeout(saveT);saveT=setTimeout(doSave,300)}
 async function doSave(){
  try{
-  const json=JSON.stringify(notes);
+  const json=JSON.stringify({v:2,notes,trusted});
   if(key){
-   const iv=crypto.getRandomValues(new Uint8Array(12));
+   const iv=rnd(12);
    const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(json)));
    localStorage.setItem('pn1',JSON.stringify({e:1,s:store.s,iv:b64(iv),ct:b64(ct)}));
   }else localStorage.setItem('pn1',JSON.stringify({e:0,d:json}));
  }catch(e){showErr('Could not save: '+e.message)}
 }
+function adopt(parsed){
+ if(parsed&&parsed.v===2){notes=clean(parsed.notes||{});trusted=cleanTrusted(parsed.trusted)}
+ else{notes=clean(parsed||{});trusted=[]}
+}
 async function load(){
- let raw=localStorage.getItem('pn1');if(!raw)return;
+ let raw;try{raw=localStorage.getItem('pn1')}catch{}
+ if(!raw)return;
  const o=JSON.parse(raw);
- if(!o.e){notes=clean(JSON.parse(o.d));return}
+ if(!o.e){adopt(JSON.parse(o.d));return}
  for(;;){
   const p=prompt('Passphrase to unlock notes:');
   if(p===null){document.body.textContent='Locked. Reload to try again.';throw new Error('locked')}
   try{
    const salt=unb64(o.s);const k=await deriveKey(p,salt);
    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},k,unb64(o.ct));
-   key=k;store={s:o.s};notes=clean(JSON.parse(dec.decode(pt)));return;
+   key=k;store={s:o.s};adopt(JSON.parse(dec.decode(pt)));return;
   }catch(e){alert('Wrong passphrase')}
  }
+}
+function cleanTrusted(a){
+ if(!Array.isArray(a))return[];
+ return a.filter(t=>t&&typeof t.id==='string'&&typeof t.secret==='string'&&t.secret.length<100&&typeof t.added==='number').slice(0,LIM.trusted).map(t=>({id:t.id.slice(0,20),secret:t.secret,added:t.added}));
 }
 
 /* ---------- notes ---------- */
@@ -202,39 +318,136 @@ function merge(n){
  if(!c&&Object.keys(notes).length>=LIM.notes)return false;
  notes[n.id]={id:n.id,title:n.title,body:n.body,updated:n.updated,deleted:n.deleted};return true;
 }
+
+/* ---------- Markdown (DOM-built, no innerHTML) ---------- */
+function inline(parent,str){
+ const re=/(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(~~[^~\n]+~~)|(\*[^*\n]+\*)|(\[[^\]\n]+\]\((https?:\/\/[^\s)]+)\))/;
+ while(str){
+  const m=re.exec(str);
+  if(!m){parent.append(str);return}
+  if(m.index)parent.append(str.slice(0,m.index));
+  const t=m[0];let el;
+  if(m[1]){el=document.createElement('code');el.textContent=t.slice(1,-1)}
+  else if(m[2]){el=document.createElement('strong');inline(el,t.slice(2,-2))}
+  else if(m[3]){el=document.createElement('del');inline(el,t.slice(2,-2))}
+  else if(m[4]){el=document.createElement('em');inline(el,t.slice(1,-1))}
+  else{el=document.createElement('a');el.href=m[6];el.target='_blank';el.rel='noopener noreferrer nofollow';inline(el,t.slice(1,t.indexOf(']')))}
+  parent.append(el);str=str.slice(m.index+t.length);
+ }
+}
+function mdRender(text,root,onToggle){
+ root.textContent='';
+ const lines=text.split('\n');let i=0,para=null,list=null,listType='';
+ const flush=()=>{para=null};
+ const endList=()=>{list=null;listType=''};
+ while(i<lines.length){
+  const ln=lines[i];let m;
+  if(/^```/.test(ln)){flush();endList();const pre=document.createElement('pre'),code=document.createElement('code');const buf=[];i++;while(i<lines.length&&!/^```/.test(lines[i])){buf.push(lines[i]);i++}code.textContent=buf.join('\n');pre.append(code);root.append(pre);i++;continue}
+  if(!ln.trim()){flush();endList();i++;continue}
+  if((m=/^(#{1,6})\s+(.*)$/.exec(ln))){flush();endList();const h=document.createElement('h'+m[1].length);inline(h,m[2]);root.append(h);i++;continue}
+  if(/^(-{3,}|\*{3,})\s*$/.test(ln)){flush();endList();root.append(document.createElement('hr'));i++;continue}
+  if((m=/^>\s?(.*)$/.exec(ln))){flush();endList();const bq=document.createElement('blockquote');inline(bq,m[1]);root.append(bq);i++;continue}
+  if((m=/^\s*([-*+]|\d+\.)\s+(.*)$/.exec(ln))){
+   flush();const type=/\d/.test(m[1])?'ol':'ul';
+   if(!list||listType!==type){list=document.createElement(type);listType=type;root.append(list)}
+   const li=document.createElement('li');let body=m[2],t;
+   if((t=/^\[( |x|X)\]\s+(.*)$/.exec(body))){
+    li.className='task'+(t[1]!==' '?' done':'');
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=t[1]!==' ';const idx=i;cb.onchange=()=>onToggle(idx);
+    const sp=document.createElement('span');inline(sp,t[2]);li.append(cb,sp);
+   }else inline(li,body);
+   list.append(li);i++;continue;
+  }
+  endList();
+  if(!para){para=document.createElement('p');root.append(para)}else para.append(document.createElement('br'));
+  inline(para,ln);i++;
+ }
+}
+function wrapSel(before,after,ph){
+ const ta=$('#body'),s=ta.selectionStart,e=ta.selectionEnd,v=ta.value,sel=v.slice(s,e)||ph;
+ ta.value=v.slice(0,s)+before+sel+after+v.slice(e);ta.focus();ta.setSelectionRange(s+before.length,s+before.length+sel.length);touch();
+}
+function linePrefix(p){
+ const ta=$('#body'),s=ta.selectionStart,v=ta.value,ls=v.lastIndexOf('\n',s-1)+1;
+ ta.value=v.slice(0,ls)+p+v.slice(ls);ta.focus();ta.setSelectionRange(s+p.length,s+p.length);touch();
+}
+document.querySelectorAll('#tools button').forEach(b=>b.onclick=()=>{
+ const f=b.dataset.f;
+ if(f==='b')wrapSel('**','**','bold');else if(f==='i')wrapSel('*','*','italic');else if(f==='h')linePrefix('## ');
+ else if(f==='ul')linePrefix('- ');else if(f==='task')linePrefix('- [ ] ');else if(f==='code')wrapSel('`','`','code');else if(f==='link')wrapSel('[',']( https://example.com )'.replace(/ /g,''),'text');
+});
+function setMode(m){mode=m;render()}
+$('#tabEdit').onclick=()=>setMode('edit');$('#tabPrev').onclick=()=>setMode('preview');
+
+/* ---------- list / editor ---------- */
 function render(){
  const list=$('#list');list.textContent='';
- Object.values(notes).filter(n=>!n.deleted).sort((a,b)=>b.updated-a.updated).forEach(n=>{
+ const q=$('#q').value.trim().toLowerCase();
+ const all=Object.values(notes).filter(n=>!n.deleted).sort((a,b)=>b.updated-a.updated);
+ const shown=q?all.filter(n=>(n.title+'\n'+n.body).toLowerCase().includes(q)):all;
+ shown.forEach(n=>{
   const d=document.createElement('div');d.className='item'+(n.id===curId?' sel':'');
   const b=document.createElement('b');b.textContent=n.title||'Untitled';
   const s=document.createElement('span');s.textContent=n.body.slice(0,80).replace(/\s+/g,' ')||'No content';
   d.append(b,s);d.onclick=()=>open(n.id);list.append(d);
  });
+ if(!shown.length){const d=document.createElement('div');d.className='none';d.textContent=q?'No notes match your search.':'No notes yet. Tap + New.';list.append(d)}
  const n=curId&&notes[curId]&&!notes[curId].deleted?notes[curId]:null;
  if(!n)curId=null;
- for(const id of ['#bar','#title','#body'])$(id).classList.toggle('hide',!n);
+ const prev=mode==='preview';
+ $('#bar').classList.toggle('hide',!n);$('#title').classList.toggle('hide',!n);
+ $('#tools').classList.toggle('hide',!n||prev);$('#body').classList.toggle('hide',!n||prev);$('#preview').classList.toggle('hide',!n||!prev);
  $('#empty').classList.toggle('hide',!!n);
- if(n){if($('#title').value!==n.title)$('#title').value=n.title;if($('#body').value!==n.body)$('#body').value=n.body}
- $('#app').classList.toggle('editing',!!n&&window.innerWidth<=700&&editing);
+ $('#tabEdit').classList.toggle('on',!prev);$('#tabPrev').classList.toggle('on',prev);
+ if(n){
+  if($('#title').value!==n.title)$('#title').value=n.title;
+  if($('#body').value!==n.body)$('#body').value=n.body;
+  if(prev)mdRender(n.body,$('#preview'),idx=>{
+   const ls=n.body.split('\n');ls[idx]=ls[idx].replace(/\[( |x|X)\]/,(m,c)=>c===' '?'[x]':'[ ]');$('#body').value=ls.join('\n');touch();
+  });
+ }
+ $('#app').classList.toggle('editing',!!n&&editing);
 }
-let editing=false;
 function open(id){curId=id;editing=true;render()}
 function touch(){
  const n=notes[curId];if(!n)return;
  n.title=$('#title').value;n.body=$('#body').value;n.updated=Math.max(Date.now(),n.updated+1);
- save();send({t:'note',n});renderListOnly();
+ save();send({t:'note',n});const y=$('#list').scrollTop;render();$('#list').scrollTop=y;
 }
-function renderListOnly(){const y=$('#list').scrollTop;const t=$('#title').value,b=$('#body').value;render();$('#list').scrollTop=y}
-$('#newBtn').onclick=()=>{const n={id:rid(),title:'',body:'',updated:Date.now(),deleted:false};notes[n.id]=n;save();send({t:'note',n});open(n.id);$('#title').focus()};
-$('#title').oninput=touch;$('#body').oninput=touch;
+$('#newBtn').onclick=()=>{const n={id:rid(),title:'',body:'',updated:Date.now(),deleted:false};notes[n.id]=n;$('#q').value='';mode='edit';save();send({t:'note',n});open(n.id);$('#title').focus()};
+$('#title').oninput=touch;$('#body').oninput=touch;$('#q').oninput=render;
 $('#back').onclick=()=>{editing=false;render()};
 $('#delBtn').onclick=()=>{if(!confirm('Delete this note on all connected devices?'))return;const n=notes[curId];n.deleted=true;n.title='';n.body='';n.updated=Math.max(Date.now(),n.updated+1);save();send({t:'note',n});editing=false;curId=null;render()};
 
+/* ---------- QR drawing + scanning ---------- */
+function drawQr(canvas,text){
+ try{
+  const M=QR.encode(Array.from(enc.encode(text)));const n=M.length,sc=Math.max(3,Math.floor(320/(n+8))),px=(n+8)*sc;
+  canvas.width=canvas.height=px;const c=canvas.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,px,px);c.fillStyle='#000';
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(M[y][x])c.fillRect((x+4)*sc,(y+4)*sc,sc,sc);
+  canvas.classList.remove('hide');return true;
+ }catch(e){canvas.classList.add('hide');return false}
+}
+let camStream=null,scanTimer=0,scanBack='s0';
+function stopScan(){clearInterval(scanTimer);if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}$('#cam').srcObject=null}
+async function startScan(from,onResult){
+ showErr('');
+ if(!('BarcodeDetector' in window)||!navigator.mediaDevices){showErr("This browser can't scan QR codes in the app. Scan with your phone's camera app instead (the invite QR opens the app), or paste the code.");return}
+ try{
+  const det=new BarcodeDetector({formats:['qr_code']});
+  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+  const v=$('#cam');v.srcObject=camStream;await v.play();scanBack=from;step('s5');
+  scanTimer=setInterval(async()=>{try{const r=await det.detect(v);if(r.length){const val=r[0].rawValue;stopScan();step(from);onResult(val)}}catch{}},250);
+ }catch(e){stopScan();showErr('Camera unavailable: '+(e.message||e.name))}
+}
+$('#stopScan').onclick=()=>{stopScan();step(scanBack)};
+
 /* ---------- P2P ---------- */
-let pc=null,dc=null,localOk=false,remoteReady=false,synced=false;
+let pc=null,dc=null,localOk=false,remoteReady=false,synced=false,wasConnected=false;
+let myNonce='',remoteNonce='',trustMatched=false,myHalf='',theirHalf='';
 const dlg=$('#dlg');
-function step(id){for(const s of ['s0','s1','s2','s3','s4'])$('#'+s).classList.toggle('hide',s!==id);showErr('')}
-function setStatus(on,txt){$('#dot').classList.toggle('on',on);$('#stat').textContent=txt;$('#syncBtn').textContent=on?'Manage':'Connect'}
+function step(id){for(const s of ['s0','s1','s2','s3','s4','s5'])$('#'+s).classList.toggle('hide',s!==id);showErr('');if(id==='s0')$('#trustedHint').classList.toggle('hide',!trusted.length);if(id==='s4')renderDevs()}
+function setStatus(on,txt){$('#dot').classList.toggle('on',on);$('#stat').textContent=txt;$('#syncBtn').textContent=on?'Manage':(wasConnected?'Reconnect':'Connect')}
 function newPC(){
  teardown();
  const ice=$('#useStun').checked?[{urls:'stun:stun.l.google.com:19302'}]:[];
@@ -245,80 +458,118 @@ function newPC(){
  };
  pc.ondatachannel=e=>wire(e.channel);
 }
-function teardown(){try{dc&&dc.close()}catch{}try{pc&&pc.close()}catch{}pc=dc=null;localOk=remoteReady=synced=false;setStatus(false,'Not connected')}
+function teardown(){try{dc&&dc.close()}catch{}try{pc&&pc.close()}catch{}pc=dc=null;localOk=remoteReady=synced=trustMatched=false;myHalf=theirHalf='';setStatus(false,wasConnected?'Disconnected':'Not connected')}
 function wire(ch){
  dc=ch;
  ch.onopen=async()=>{
-  setStatus(false,'Verify code…');
+  setStatus(false,'Verifying…');
+  myNonce=b64(rnd(16));remoteNonce='';trustMatched=false;
   await showSas();step('s3');if(!dlg.open)dlg.showModal();
+  rawSend({t:'hello',nonce:myNonce});
  };
- ch.onclose=()=>{setStatus(false,'Disconnected');synced=false};
+ ch.onclose=()=>{if(synced)setStatus(false,'Disconnected');synced=false};
  ch.onmessage=onMsg;
 }
 async function iceDone(){
  if(pc.iceGatheringState==='complete')return;
  await new Promise(res=>{const f=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',f);res()}};pc.addEventListener('icegatheringstatechange',f);setTimeout(res,5000)});
 }
+function sdpOf(code){return unpack(code).then(sdp=>{if(typeof sdp!=='string'||!sdp.startsWith('v=0')||sdp.length>20000)throw new Error('That is not a valid connection code');return sdp})}
+const linkFor=code=>location.href.split('#')[0]+'#i='+code;
 $('#mkOffer').onclick=async()=>{
  try{
   newPC();const ch=pc.createDataChannel('notes',{ordered:true});wire(ch);
   await pc.setLocalDescription(await pc.createOffer());await iceDone();
-  $('#offerOut').value=await pack(JSON.stringify(pc.localDescription));step('s1');
+  const code=await pack(pc.localDescription.sdp);
+  $('#offerOut').value=code;step('s1');
+  if(!drawQr($('#offerQr'),linkFor(code))&&!drawQr($('#offerQr'),code))showErr('Code too long for a QR — use Copy instead.');
  }catch(e){showErr(e.message)}
 };
 $('#mkJoin').onclick=()=>step('s2');
 $('#mkAnswer').onclick=async()=>{
  try{
-  const desc=JSON.parse(await unpack($('#offerIn').value));
-  if(desc.type!=='offer'||typeof desc.sdp!=='string')throw new Error('That is not an invite code');
-  newPC();await pc.setRemoteDescription(desc);
+  const sdp=await sdpOf(extractCode($('#offerIn').value));
+  newPC();await pc.setRemoteDescription({type:'offer',sdp});
   await pc.setLocalDescription(await pc.createAnswer());await iceDone();
-  $('#answerOut').value=await pack(JSON.stringify(pc.localDescription));$('#ansWrap').classList.remove('hide');
+  const code=await pack(pc.localDescription.sdp);
+  $('#answerOut').value=code;$('#ansWrap').classList.remove('hide');
+  if(!drawQr($('#answerQr'),code))showErr('Code too long for a QR — use Copy instead.');
  }catch(e){showErr(e.message)}
 };
 $('#applyAnswer').onclick=async()=>{
  try{
-  const desc=JSON.parse(await unpack($('#answerIn').value));
-  if(desc.type!=='answer'||typeof desc.sdp!=='string')throw new Error('That is not a reply code');
-  await pc.setRemoteDescription(desc);setStatus(false,'Connecting…');
+  if(!pc)throw new Error('Create an invite first');
+  const sdp=await sdpOf(extractCode($('#answerIn').value));
+  await pc.setRemoteDescription({type:'answer',sdp});setStatus(false,'Connecting…');
  }catch(e){showErr(e.message)}
 };
-const copy=id=>async()=>{const t=$(id).value;try{await navigator.clipboard.writeText(t)}catch{$(id).select();document.execCommand('copy')}};
-const share=id=>async()=>{const t=$(id).value;if(navigator.share)try{await navigator.share({text:t})}catch{}else copy(id)()};
-$('#copyOffer').onclick=copy('#offerOut');$('#copyAnswer').onclick=copy('#answerOut');
-$('#shareOffer').onclick=share('#offerOut');$('#shareAnswer').onclick=share('#answerOut');
+$('#scanAnswer').onclick=()=>startScan('s1',v=>{$('#answerIn').value=extractCode(v);$('#applyAnswer').click()});
+$('#scanOffer').onclick=()=>startScan('s2',v=>{$('#offerIn').value=extractCode(v);$('#mkAnswer').click()});
+const copyText=async t=>{try{await navigator.clipboard.writeText(t)}catch{const a=document.createElement('textarea');a.value=t;document.body.append(a);a.select();document.execCommand('copy');a.remove()}};
+const shareText=async t=>{if(navigator.share)try{await navigator.share({text:t})}catch{}else copyText(t)};
+$('#copyOffer').onclick=()=>copyText($('#offerOut').value);
+$('#copyLink').onclick=()=>copyText(linkFor($('#offerOut').value));
+$('#copyAnswer').onclick=()=>copyText($('#answerOut').value);
+$('#shareOffer').onclick=()=>shareText(linkFor($('#offerOut').value));
+$('#shareAnswer').onclick=()=>shareText($('#answerOut').value);
 
+function fpString(){
+ const f=s=>(s.match(/a=fingerprint:\S+ [0-9A-Fa-f:]+/g)||[]).map(x=>x.toLowerCase());
+ return [...f(pc.localDescription.sdp),...f(pc.remoteDescription.sdp)].sort().join('|');
+}
 /* Short authentication string: hash of both DTLS fingerprints. A man-in-the-middle
-   would have to present different fingerprints to each side, giving different codes. */
-function fps(sdp){return (sdp.match(/a=fingerprint:\S+ [0-9A-Fa-f:]+/g)||[]).map(s=>s.toLowerCase()).sort()}
+   must present different fingerprints to each side, so the two screens would differ. */
 async function showSas(){
- const all=[...fps(pc.localDescription.sdp),...fps(pc.remoteDescription.sdp)].sort().join('|');
- const h=await hash(enc.encode('peernotes-sas|'+all));
+ const h=await hash(enc.encode('peernotes-sas|'+fpString()));
  const n=((h[0]<<24|h[1]<<16|h[2]<<8|h[3])>>>0)%1000000;
  $('#sas').textContent=String(n).padStart(6,'0').replace(/(\d{3})(\d{3})/,'$1 $2');
- localOk=false;remoteReady=false;$('#sasOk').disabled=false;$('#waitMsg').classList.add('hide');
+ localOk=false;remoteReady=false;$('#sasOk').disabled=false;
+ for(const id of ['#waitMsg','#trustMsg'])$(id).classList.add('hide');
 }
-$('#sasOk').onclick=()=>{localOk=true;$('#sasOk').disabled=true;$('#waitMsg').classList.remove('hide');rawSend({t:'ready'});maybeStart()};
+function confirmLocal(){if(localOk)return;localOk=true;$('#sasOk').disabled=true;$('#waitMsg').classList.remove('hide');rawSend({t:'ready'});maybeStart()}
+$('#sasOk').onclick=confirmLocal;
 $('#sasNo').onclick=()=>{teardown();dlg.close()};
 function maybeStart(){
  if(localOk&&remoteReady&&!synced){
-  synced=true;setStatus(true,'Connected & encrypted');dlg.close();
+  synced=true;wasConnected=true;setStatus(true,trustMatched?'Connected (trusted device)':'Connected & encrypted');dlg.close();
   rawSend({t:'all',notes:Object.values(notes)});
+  if(!trustMatched&&$('#trustChk').checked&&trusted.length<LIM.trusted){myHalf=b64(rnd(32));rawSend({t:'trust',half:myHalf});finishTrust()}
  }
+}
+async function finishTrust(){
+ if(!myHalf||!theirHalf)return;
+ const sec=b64(await hash(enc.encode('peernotes-secret|'+[myHalf,theirHalf].sort().join('|'))));
+ if(!trusted.some(t=>t.secret===sec)){trusted.push({id:sec.slice(0,8),secret:sec,added:Date.now()});save()}
+ myHalf=theirHalf='';
+}
+/* Remembered devices: both sides prove knowledge of a shared secret bound to this
+   connection's DTLS fingerprints and fresh nonces, so no manual code check is needed. */
+async function proofs(){
+ const ns=[myNonce,remoteNonce].sort().join('|'),fp=fpString();
+ return Promise.all(trusted.map(async t=>b64(await hash(enc.encode('peernotes-proof|'+t.secret+'|'+fp+'|'+ns)))));
+}
+async function onProofs(list){
+ const mine=await proofs();
+ if(mine.some(p=>list.includes(p))){trustMatched=true;$('#trustMsg').classList.remove('hide');confirmLocal()}
 }
 function rawSend(o){if(dc&&dc.readyState==='open')dc.send(JSON.stringify(o))}
 function send(o){if(synced)rawSend(o)}
-function onMsg(e){
+async function onMsg(e){
  if(typeof e.data!=='string'||e.data.length>LIM.msg)return;
  let m;try{m=JSON.parse(e.data)}catch{return}
  if(!m||typeof m!=='object')return;
+ if(m.t==='hello'){
+  if(typeof m.nonce!=='string'||m.nonce.length>40||remoteNonce)return;
+  remoteNonce=m.nonce;rawSend({t:'proofs',list:await proofs()});return;
+ }
+ if(m.t==='proofs'){if(Array.isArray(m.list)&&remoteNonce&&!synced)onProofs(m.list.filter(x=>typeof x==='string'&&x.length<100).slice(0,LIM.trusted));return}
  if(m.t==='ready'){remoteReady=true;maybeStart();return}
- if(!synced)return; // ignore data until both users confirmed the code
+ if(!synced)return; // ignore data until both sides confirmed
+ if(m.t==='trust'){if(typeof m.half==='string'&&m.half.length<100&&!theirHalf){theirHalf=m.half;finishTrust()}return}
  let ch=false;
  if(m.t==='note'){ch=merge(m.n)}
  else if(m.t==='all'&&Array.isArray(m.notes)){
   for(const n of m.notes.slice(0,LIM.notes))ch=merge(n)||ch;
-  // send back anything we have that is newer
   const theirs={};for(const n of m.notes)if(n&&n.id)theirs[n.id]=n.updated;
   for(const n of Object.values(notes))if(!(n.id in theirs)||theirs[n.id]<n.updated)rawSend({t:'note',n});
  }
@@ -326,22 +577,38 @@ function onMsg(e){
 }
 
 /* ---------- settings / dialog ---------- */
+function renderDevs(){
+ const box=$('#devs');box.textContent='';
+ if(!trusted.length){const p=document.createElement('p');p.textContent='None yet.';box.append(p);return}
+ trusted.forEach((t,i)=>{
+  const d=document.createElement('div');d.className='dev';
+  const s=document.createElement('span');s.textContent='Device '+t.id.slice(0,4).toUpperCase()+' · added '+new Date(t.added).toLocaleDateString();
+  const b=document.createElement('button');b.textContent='Forget';b.className='danger';b.onclick=()=>{trusted.splice(i,1);save();renderDevs()};
+  d.append(s,b);box.append(d);
+ });
+}
 $('#syncBtn').onclick=()=>{synced?step('s4'):step('s0');if(!dlg.open)dlg.showModal()};
 $('#menuBtn').onclick=()=>{step('s4');dlg.showModal()};
-$('#closeDlg').onclick=()=>dlg.close();
+$('#closeDlg').onclick=()=>{stopScan();dlg.close()};
+dlg.addEventListener('close',stopScan);
 $('#disc').onclick=()=>{teardown();dlg.close()};
 $('#setPass').onclick=async()=>{
  const p=$('#pass').value;
  if(!p){key=null;store=null;await doSave();showErr('Passphrase removed.');return}
  if(!hasSubtle){showErr('Encryption needs a secure context (open this page over HTTPS).');return}
  if(p.length<8){showErr('Use at least 8 characters.');return}
- const salt=crypto.getRandomValues(new Uint8Array(16));store={s:b64(salt)};key=await deriveKey(p,salt);await doSave();$('#pass').value='';showErr('Notes on this device are now encrypted.');
+ const salt=rnd(16);store={s:b64(salt)};key=await deriveKey(p,salt);await doSave();$('#pass').value='';showErr('Notes on this device are now encrypted.');
 };
 
 /* ---------- boot ---------- */
 (async()=>{
  await load();render();
- if(!window.RTCPeerConnection)setStatus(false,'WebRTC not supported');
+ if(!window.RTCPeerConnection){setStatus(false,'WebRTC not supported');return}
+ const m=location.hash.match(/^#i=([\w.\-]+)$/);
+ if(m){ // opened from an invite QR/link
+  history.replaceState(null,'',location.pathname+location.search);
+  $('#offerIn').value=m[1];step('s2');dlg.showModal();$('#mkAnswer').click();
+ }
  addEventListener('resize',render);
 })();
 })();
